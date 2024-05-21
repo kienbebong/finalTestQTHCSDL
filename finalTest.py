@@ -3,6 +3,10 @@ from tkinter import ttk, messagebox
 from sqlalchemy import create_engine, Column, Integer, String, Date, ForeignKey
 from sqlalchemy.orm import sessionmaker, relationship, declarative_base
 from datetime import datetime
+from PIL import Image, ImageTk, ImageDraw
+import os
+import atexit
+
 # Khởi tạo cơ sở dữ liệu và khung mẫu ORM
 Base = declarative_base()
 
@@ -68,8 +72,7 @@ class ThuThu(Base):
 
 
 # Tạo cơ sở dữ liệu và bảng dữ liệu
-db_directory = '/Users/dinhchikien/Desktop/finalTestQTHCSDL'
-engine = create_engine(f'sqlite:///{db_directory}/finalTest.db')
+engine = create_engine('sqlite:///finalTest.db')
 Base.metadata.create_all(engine)
 
 # Tạo phiên giao dịch để làm việc với cơ sở dữ liệu
@@ -327,11 +330,18 @@ def hien_thi_phieu_muon():
             phieu_muon.ngay_muon,
             phieu_muon.ngay_tra
         ))
+def create_rounded_button(image_size, radius, color):
+    image = Image.new('RGBA', image_size, (0, 0, 0, 0))
+    draw = ImageDraw.Draw(image)
+    draw.rounded_rectangle(((0, 0), image_size), radius, fill=color)
+    return ImageTk.PhotoImage(image)
 
 
 # Tạo ứng dụng Tkinter
 root = tk.Tk()
 root.title("Quản lý thư viện")
+
+button_image = create_rounded_button((100, 40), 10, "#1E90FF")
 
 # Tạo frame chính với Scrollbar để chứa nội dung
 main_frame = tk.Frame(root)
@@ -359,7 +369,7 @@ def on_configure(event):
 frame.bind('<Configure>', on_configure)
 
 # Khung quản lý đầu sách
-frame_dau_sach = tk.LabelFrame(frame, text="Quản lý đầu sách")
+frame_dau_sach = tk.LabelFrame(frame, text="QUẢN LÍ ĐẦU SÁCH", foreground="red")
 frame_dau_sach.pack(padx=10, pady=10, fill=tk.BOTH, expand=True)
 
 # Các ô nhập liệu đầu sách
@@ -415,33 +425,41 @@ dausach_treeview.pack(padx=10, pady=10, fill=tk.BOTH, expand=True)
 hien_thi_dau_sach()
 
 # Khung quản lý phiếu mượn sách
-frame_phieu_muon = tk.LabelFrame(frame, text="Quản lý phiếu mượn sách")
+frame_phieu_muon = tk.LabelFrame(frame, text="QUẢN LÝ PHIẾU MƯỢN SÁCH", foreground="red")
 frame_phieu_muon.pack(padx=10, pady=10, fill=tk.BOTH, expand=True)
 
 # Các ô nhập liệu phiếu mượn sách
-tk.Label(frame_phieu_muon, text="Mã phiếu mượn:").grid(row=0, column=0, sticky='e')
+label_ma_phieu_muon = tk.Label(frame_phieu_muon, text="Mã phiếu mượn:")
+label_ma_phieu_muon.grid(row=0, column=0, sticky='e')
 entry_ma_phieu_muon = tk.Entry(frame_phieu_muon)
 entry_ma_phieu_muon.grid(row=0, column=1)
 
-tk.Label(frame_phieu_muon, text="Mã độc giả:").grid(row=1, column=0, sticky='e')
+label_ma_doc_gia = tk.Label(frame_phieu_muon, text="Mã độc giả:")
+label_ma_doc_gia.grid(row=1, column=0, sticky='e')
 entry_ma_doc_gia_pm = tk.Entry(frame_phieu_muon)
 entry_ma_doc_gia_pm.grid(row=1, column=1)
 
-tk.Label(frame_phieu_muon, text="Mã thủ thư:").grid(row=2, column=0, sticky='e')
+label_ma_thu_thu = tk.Label(frame_phieu_muon, text="Mã thủ thư:")
+label_ma_thu_thu.grid(row=2, column=0, sticky='e')
 entry_ma_thu_thu_pm = tk.Entry(frame_phieu_muon)
 entry_ma_thu_thu_pm.grid(row=2, column=1)
 
-tk.Label(frame_phieu_muon, text="Mã đầu sách:").grid(row=3, column=0, sticky='e')
+label_ma_dau_sach = tk.Label(frame_phieu_muon, text="Mã đầu sách:")
+label_ma_dau_sach.grid(row=3, column=0, sticky='e')
 entry_ma_dau_sach_pm = tk.Entry(frame_phieu_muon)
 entry_ma_dau_sach_pm.grid(row=3, column=1)
 
-tk.Label(frame_phieu_muon, text="Ngày mượn:").grid(row=4, column=0, sticky='e')
+label_ngay_muon = tk.Label(frame_phieu_muon, text="Ngày mượn:")
+label_ngay_muon.grid(row=4, column=0, sticky='e')
 entry_ngay_muon = tk.Entry(frame_phieu_muon)
 entry_ngay_muon.grid(row=4, column=1)
 
-tk.Label(frame_phieu_muon, text="Ngày trả:").grid(row=5, column=0, sticky='e')
+label_ngay_tra = tk.Label(frame_phieu_muon, text="Ngày trả:")
+label_ngay_tra.grid(row=5, column=0, sticky='e')
 entry_ngay_tra = tk.Entry(frame_phieu_muon)
 entry_ngay_tra.grid(row=5, column=1)
+
+
 
 # Nút thêm, sửa, và xóa cho phiếu mượn sách
 tk.Button(frame_phieu_muon, text="Thêm Phiếu Mượn", command=them_phieu_muon).grid(row=6, column=0, columnspan=2)
@@ -465,6 +483,16 @@ phieu_muon_treeview.pack(padx=10, pady=10, fill=tk.BOTH, expand=True)
 # Hiển thị dữ liệu lên Treeview phiếu mượn sách ban đầu
 hien_thi_phieu_muon()
 
+def cleanup():
+    # Đảm bảo tệp cơ sở dữ liệu tồn tại trước khi xóa
+    if os.path.exists('finalTest.db'):
+        os.remove('finalTest.db')
+
+# Đăng ký hàm dọn dẹp với atexit
+atexit.register(cleanup)
+
+# Tiếp tục với việc khởi tạo engine và các hoạt động khác
+engine = create_engine('sqlite:///librarytest.db')
 
 # Chạy vòng lặp chính của ứng dụng
 root.mainloop()
