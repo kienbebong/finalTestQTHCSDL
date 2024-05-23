@@ -323,6 +323,9 @@ def add_phieu_muon():
     ngay_muon = entries_phieu_muon[4].get()
     ngay_tra = entries_phieu_muon[5].get()
 
+    ngay_muon = datetime.strptime('2024-01-01', '%Y-%m-%d').date()
+    ngay_tra = datetime.strptime('2025-01-01', '%Y-%m-%d').date()
+
     new_phieu_muon = PhieuMuon(
         ma_phieu_muon=ma_phieu_muon, ma_doc_gia=ma_doc_gia,
         ma_thu_thu=ma_thu_thu, ma_dau_sach=ma_dau_sach,
@@ -384,6 +387,9 @@ def update_phieu_muon():
         ngay_muon = entries_phieu_muon[4].get()
         ngay_tra = entries_phieu_muon[5].get()
 
+        ngay_muon = datetime.strptime('2024-01-01', '%Y-%m-%d').date()
+        ngay_tra = datetime.strptime('2025-01-01', '%Y-%m-%d').date()
+
         phieu_muon.ma_phieu_muon = ma_phieu_muon
         phieu_muon.ma_doc_gia = ma_doc_gia
         phieu_muon.ma_thu_thu = ma_thu_thu
@@ -414,7 +420,6 @@ atexit.register(cleanup)
 engine = create_engine('sqlite:///librarytest.db')
 
 root.mainloop()
-.
-.
+
 
 
