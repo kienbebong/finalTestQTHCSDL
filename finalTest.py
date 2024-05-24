@@ -3,6 +3,9 @@ from tkinter import ttk, messagebox
 from sqlalchemy import create_engine, Column, Integer, String, Date, ForeignKey
 from sqlalchemy.orm import sessionmaker, relationship, declarative_base
 from datetime import datetime
+import atexit
+import os
+
 # Khởi tạo cơ sở dữ liệu và khung mẫu ORM
 Base = declarative_base()
 
@@ -15,8 +18,6 @@ class BorrowingTicket(Base):
     ma_dau_sach = Column(String, ForeignKey('dau_sach.ma_dau_sach', ondelete='CASCADE', onupdate='CASCADE'))
     so_ngay_muon = Column(Integer)
 
-
-# Định nghĩa lớp ORM cho bảng DauSach
 class DauSach(Base):
     __tablename__ = 'dau_sach'
     ma_dau_sach = Column(String, primary_key=True)
@@ -27,8 +28,7 @@ class DauSach(Base):
     tac_gia = Column(String)
     so_luong_sach = Column(Integer)
     ma_chuyen_nganh = Column(String, ForeignKey('chuyen_nganh.ma_chuyen_nganh'))
-    
-    # Mối quan hệ với bảng PhieuMuon
+
     phieu_muons = relationship('PhieuMuon', back_populates='dau_sach', cascade='all, delete-orphan')
 
 class ChuyenNganh(Base):
@@ -54,10 +54,8 @@ class PhieuMuon(Base):
     ma_dau_sach = Column(String, ForeignKey('dau_sach.ma_dau_sach', ondelete='CASCADE', onupdate='CASCADE'))
     ngay_muon = Column(Date)
     ngay_tra = Column(Date, nullable=True)
-    
-    # Mối quan hệ với bảng DauSach
-    dau_sach = relationship('DauSach', back_populates='phieu_muons')
 
+    dau_sach = relationship('DauSach', back_populates='phieu_muons')
 
 class ThuThu(Base):
     __tablename__ = 'thu_thu'
@@ -65,11 +63,8 @@ class ThuThu(Base):
     ho_ten = Column(String)
     chuc_nang = Column(String)
 
-
-
 # Tạo cơ sở dữ liệu và bảng dữ liệu
-db_directory = '/Users/dinhchikien/Desktop/finalTestQTHCSDL'
-engine = create_engine(f'sqlite:///{db_directory}/finalTest.db')
+engine = create_engine('sqlite:///finalTest.db')
 Base.metadata.create_all(engine)
 
 # Tạo phiên giao dịch để làm việc với cơ sở dữ liệu
@@ -121,355 +116,311 @@ phieu_muons = [
     PhieuMuon(ma_doc_gia="DG001", ma_thu_thu="TT001", ma_dau_sach="DS001", ngay_muon=datetime(2024, 5, 1), ngay_tra=datetime(2025, 5, 1)),
     PhieuMuon(ma_doc_gia="DG002", ma_thu_thu="TT002", ma_dau_sach="DS002", ngay_muon=datetime(2024, 5, 2), ngay_tra=datetime(2025, 5, 2)),
     PhieuMuon(ma_doc_gia="DG003", ma_thu_thu="TT003", ma_dau_sach="DS003", ngay_muon=datetime(2024, 5, 3), ngay_tra=datetime(2025, 5, 3)),
-    PhieuMuon(ma_doc_gia="DG004", ma_thu_thu="TT004", ma_dau_sach="DS004", ngay_muon=datetime(2024, 5, 4), ngay_tra=datetime(2025, 5, 4))
+    PhieuMuon(ma_doc_gia= "DG004", ma_thu_thu="TT004", ma_dau_sach="DS004", ngay_muon=datetime(2024, 5, 4), ngay_tra=datetime(2025, 5, 4))
 ]
 
-# Thêm các đối tượng vào phiên giao dịch
+# Lưu các đối tượng vào cơ sở dữ liệu
 session.add_all(borrowing_tickets)
 session.add_all(chuyen_nganhs)
 session.add_all(the_doc_gias)
 session.add_all(thu_thus)
 session.add_all(dau_sachs)
 session.add_all(phieu_muons)
-
-# Commit phiên giao dịch để lưu các thay đổi vào cơ sở dữ liệu
 session.commit()
 
-
-def them_dau_sach():
-    ma_dau_sach = entry_ma_dau_sach.get()
-    ten_dau_sach = entry_ten_dau_sach.get()
-    nha_xuat_ban = entry_nha_xuat_ban.get()
-    so_trang = entry_so_trang.get()
-    kich_thuoc = entry_kich_thuoc.get()
-    tac_gia = entry_tac_gia.get()
-    so_luong_sach = entry_so_luong_sach.get()
-    ma_chuyen_nganh = entry_ma_chuyen_nganh_sach.get()
-    
-    if not ma_dau_sach:
-        messagebox.showerror("Lỗi", "Mã đầu sách không được để trống")
-        return
-    
-    dau_sach = DauSach(ma_dau_sach=ma_dau_sach, ten_dau_sach=ten_dau_sach, nha_xuat_ban=nha_xuat_ban, so_trang=so_trang, kich_thuoc=kich_thuoc, tac_gia=tac_gia, so_luong_sach=so_luong_sach, ma_chuyen_nganh=ma_chuyen_nganh)
-    session.add(dau_sach)
-    session.commit()
-    messagebox.showinfo("Thành công", "Đã thêm đầu sách thành công")
-    hien_thi_dau_sach()
-
-# Hàm sửa thông tin đầu sách
-def sua_dau_sach():
-    ma_dau_sach = entry_ma_dau_sach.get()
-    ten_dau_sach = entry_ten_dau_sach.get()
-    nha_xuat_ban = entry_nha_xuat_ban.get()
-    so_trang = entry_so_trang.get()
-    kich_thuoc = entry_kich_thuoc.get()
-    tac_gia = entry_tac_gia.get()
-    so_luong_sach = entry_so_luong_sach.get()
-    ma_chuyen_nganh = entry_ma_chuyen_nganh_sach.get()
-    
-    dau_sach = session.query(DauSach).filter_by(ma_dau_sach=ma_dau_sach).first()
-    if dau_sach:
-        if ten_dau_sach:
-            dau_sach.ten_dau_sach = ten_dau_sach
-        if nha_xuat_ban:
-            dau_sach.nha_xuat_ban = nha_xuat_ban
-        if so_trang:
-            dau_sach.so_trang = so_trang
-        if kich_thuoc:
-            dau_sach.kich_thuoc = kich_thuoc
-        if tac_gia:
-            dau_sach.tac_gia = tac_gia
-        if so_luong_sach:
-            dau_sach.so_luong_sach = so_luong_sach
-        if ma_chuyen_nganh:
-            dau_sach.ma_chuyen_nganh = ma_chuyen_nganh
-        session.commit()
-        messagebox.showinfo("Thành công", "Đã sửa thông tin đầu sách thành công")
-        hien_thi_dau_sach()
-    else:
-        messagebox.showerror("Lỗi", "Không tìm thấy đầu sách")
-
-def xoa_dau_sach():
-    # Lấy mã đầu sách từ giao diện người dùng
-    ma_dau_sach = entry_ma_dau_sach.get()
-    
-    # Tìm đầu sách trong cơ sở dữ liệu
-    dau_sach = session.query(DauSach).filter_by(ma_dau_sach=ma_dau_sach).first()
-    
-    if dau_sach:
-        # Kiểm tra xem có bất kỳ phiếu mượn nào liên quan đến cuốn sách bị xoá hay không
-        phieu_muon_lien_quan = session.query(PhieuMuon).filter_by(ma_dau_sach=ma_dau_sach).all()
-        
-        if phieu_muon_lien_quan:
-            # Nếu có, cập nhật hoặc xoá những phiếu mượn đó
-            for phieu_muon in phieu_muon_lien_quan:
-                # Xoá phiếu mượn liên quan
-                session.delete(phieu_muon)
-                hien_thi_phieu_muon()
-        
-        # Xóa đầu sách khỏi cơ sở dữ liệu
-        session.delete(dau_sach)
-        session.commit()
-        messagebox.showinfo("Thành công", "Đã xóa đầu sách thành công cùng với các phiếu mượn sách liên quan")
-        hien_thi_dau_sach()  # Cập nhật giao diện sau khi xóa
-    else:
-        messagebox.showerror("Lỗi", "Không tìm thấy đầu sách")
-
-
-# Hàm hiển thị đầu sách trong data gridview
-def hien_thi_dau_sach():
-    # Xóa tất cả các hàng hiện tại trong Treeview
-    dausach_treeview.delete(*dausach_treeview.get_children())
-
-    # Lấy dữ liệu đầu sách từ cơ sở dữ liệu
-    dau_sach_list = session.query(DauSach).all()
-
-    # Thêm dữ liệu vào Treeview
-    for dau_sach in dau_sach_list:
-        dausach_treeview.insert("", tk.END, values=(dau_sach.ma_dau_sach, dau_sach.ten_dau_sach, dau_sach.nha_xuat_ban, dau_sach.so_trang, dau_sach.kich_thuoc, dau_sach.tac_gia, dau_sach.so_luong_sach))
-
-# Hàm thêm phiếu mượn sách
-def them_phieu_muon():
-    ma_phieu_muon = entry_ma_phieu_muon.get()
-    ma_doc_gia = entry_ma_doc_gia_pm.get()
-    ma_thu_thu = entry_ma_thu_thu_pm.get()
-    ma_dau_sach = entry_ma_dau_sach_pm.get()
-    ngay_muon = entry_ngay_muon.get()
-    ngay_tra = entry_ngay_tra.get()
-    
-    # Chuyển đổi ngày mượn và ngày trả thành đối tượng date của Python
-    try:
-        ngay_muon = datetime.strptime(ngay_muon, '%Y-%m-%d').date() if ngay_muon else None
-        ngay_tra = datetime.strptime(ngay_tra, '%Y-%m-%d').date() if ngay_tra else None
-    except ValueError:
-        messagebox.showerror("Lỗi", "Ngày mượn hoặc ngày trả không hợp lệ. Định dạng phải là YYYY-MM-DD.")
-        return
-    
-    # Tạo đối tượng phiếu mượn sách
-    phieu_muon = PhieuMuon(
-        ma_phieu_muon=ma_phieu_muon,
-        ma_doc_gia=ma_doc_gia,
-        ma_thu_thu=ma_thu_thu,
-        ma_dau_sach=ma_dau_sach,
-        ngay_muon=ngay_muon,
-        ngay_tra=ngay_tra
-    )
-    
-    # Thêm phiếu mượn sách vào cơ sở dữ liệu
-    session.add(phieu_muon)
-    session.commit()
-    messagebox.showinfo("Thành công", "Đã thêm phiếu mượn thành công")
-    hien_thi_phieu_muon()
-
-# Hàm sửa phiếu mượn sách
-def sua_phieu_muon():
-    ma_phieu_muon = entry_ma_phieu_muon.get()
-    ma_doc_gia = entry_ma_doc_gia_pm.get()
-    ma_thu_thu = entry_ma_thu_thu_pm.get()
-    ma_dau_sach = entry_ma_dau_sach_pm.get()
-    ngay_muon = entry_ngay_muon.get()
-    ngay_tra = entry_ngay_tra.get()
-    
-    # Tìm phiếu mượn sách trong cơ sở dữ liệu
-    phieu_muon = session.query(PhieuMuon).filter_by(ma_phieu_muon=ma_phieu_muon).first()
-    
-    if phieu_muon:
-        # Cập nhật thông tin phiếu mượn sách
-        if ma_doc_gia:
-            phieu_muon.ma_doc_gia = ma_doc_gia
-        if ma_thu_thu:
-            phieu_muon.ma_thu_thu = ma_thu_thu
-        if ma_dau_sach:
-            phieu_muon.ma_dau_sach = ma_dau_sach
-        if ngay_muon:
-            phieu_muon.ngay_muon = datetime.strptime(ngay_muon, '%Y-%m-%d').date() if ngay_muon else None
-        if ngay_tra:
-            phieu_muon.ngay_tra = datetime.strptime(ngay_tra, '%Y-%m-%d').date() if ngay_tra else None
-        
-        # Lưu thay đổi vào cơ sở dữ liệu
-        session.commit()
-        messagebox.showinfo("Thành công", "Đã sửa phiếu mượn thành công")
-        hien_thi_phieu_muon()
-    else:
-        messagebox.showerror("Lỗi", "Không tìm thấy phiếu mượn")
-
-# Hàm xóa phiếu mượn sách
-def xoa_phieu_muon():
-    ma_phieu_muon = entry_ma_phieu_muon.get()
-    
-    # Tìm phiếu mượn sách trong cơ sở dữ liệu
-    phieu_muon = session.query(PhieuMuon).filter_by(ma_phieu_muon=ma_phieu_muon).first()
-    
-    if phieu_muon:
-        # Xóa phiếu mượn sách khỏi cơ sở dữ liệu
-        session.delete(phieu_muon)
-        session.commit()
-        messagebox.showinfo("Thành công", "Đã xóa phiếu mượn thành công")
-        hien_thi_phieu_muon()
-    else:
-        messagebox.showerror("Lỗi", "Không tìm thấy phiếu mượn")
-
-# Hàm hiển thị phiếu mượn sách trong data gridview
-def hien_thi_phieu_muon():
-    # Xóa tất cả các hàng hiện tại trong Treeview
-    phieu_muon_treeview.delete(*phieu_muon_treeview.get_children())
-
-    # Lấy dữ liệu phiếu mượn sách từ cơ sở dữ liệu
-    phieu_muon_list = session.query(PhieuMuon).all()
-
-    # Thêm dữ liệu vào Treeview
-    for phieu_muon in phieu_muon_list:
-        phieu_muon_treeview.insert("", tk.END, values=(
-            phieu_muon.ma_phieu_muon,
-            phieu_muon.ma_doc_gia,
-            phieu_muon.ma_thu_thu,
-            phieu_muon.ma_dau_sach,
-            phieu_muon.ngay_muon,
-            phieu_muon.ngay_tra
-        ))
-
+# Đóng phiên làm việc khi chương trình kết thúc
+atexit.register(lambda: session.close())
 
 # Tạo ứng dụng Tkinter
 root = tk.Tk()
-root.title("Quản lý thư viện")
+root.title("Quản Lý Thư Viện")
+root.geometry("1500x600")
 
-# Tạo frame chính với Scrollbar để chứa nội dung
-main_frame = tk.Frame(root)
-main_frame.pack(fill=tk.BOTH, expand=True)
+# Tạo các tab trong ứng dụng
+notebook = ttk.Notebook(root)
+notebook.pack(pady=10, expand=True)
 
-# Tạo Canvas để thêm Scrollbar
-canvas = tk.Canvas(main_frame)
-canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+frame_dau_sach = ttk.Frame(notebook, width=1000, height=600)
+frame_phieu_muon = ttk.Frame(notebook, width=1000, height=600)
 
-# Tạo thanh Scrollbar và liên kết với Canvas
-scrollbar = tk.Scrollbar(main_frame, orient=tk.VERTICAL, command=canvas.yview)
-scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+frame_dau_sach.pack(fill='both', expand=True)
+frame_phieu_muon.pack(fill='both', expand=True)
 
-# Kết nối Canvas với Scrollbar
-canvas.configure(yscrollcommand=scrollbar.set)
+notebook.add(frame_dau_sach, text='Quản Lý Đầu Sách')
+notebook.add(frame_phieu_muon, text='Quản Lý Phiếu Mượn')
 
-# Tạo khung chứa các frame trong Canvas
-frame = tk.Frame(canvas)
-canvas.create_window((0, 0), window=frame, anchor=tk.NW)
+# Widgets cho quản lý đầu sách
+labels_dau_sach = [
+    "Mã Đầu Sách", "Tên Đầu Sách", "Nhà Xuất Bản", "Số Trang",
+    "Kích Thước", "Tác Giả", "Số Lượng Sách", "Mã Chuyên Ngành"
+]
+entries_dau_sach = []
 
-# Thiết lập sự kiện để tự động cuộn khi cần thiết
-def on_configure(event):
-    canvas.configure(scrollregion=canvas.bbox('all'))
+for i, label in enumerate(labels_dau_sach):
+    lbl = ttk.Label(frame_dau_sach, text=label)
+    lbl.grid(row=i, column=0, padx=5, pady=5, sticky='W')
+    entry = ttk.Entry(frame_dau_sach)
+    entry.grid(row=i, column=1, padx=5, pady=5, sticky='W')
+    entries_dau_sach.append(entry)
 
-frame.bind('<Configure>', on_configure)
+# Treeview cho quản lý đầu sách
+tree_dau_sach = ttk.Treeview(frame_dau_sach, columns=(1, 2, 3, 4, 5, 6, 7, 8), show='headings', height=10)
+tree_dau_sach.grid(row=0, column=2, rowspan=8, padx=5, pady=5)
 
-# Khung quản lý đầu sách
-frame_dau_sach = tk.LabelFrame(frame, text="Quản lý đầu sách")
-frame_dau_sach.pack(padx=10, pady=10, fill=tk.BOTH, expand=True)
+# Đặt tên cho các cột trong Treeview cho quản lý đầu sách
+tree_dau_sach.heading(1, text='Mã Đầu Sách')
+tree_dau_sach.heading(2, text='Tên Đầu Sách')
+tree_dau_sach.heading(3, text='Nhà Xuất Bản')
+tree_dau_sach.heading(4, text='Số Trang')
+tree_dau_sach.heading(5, text='Kích Thước')
+tree_dau_sach.heading(6, text='Tác Giả')
+tree_dau_sach.heading(7, text='Số Lượng Sách')
+tree_dau_sach.heading(8, text='Mã Chuyên Ngành')
 
-# Các ô nhập liệu đầu sách
-tk.Label(frame_dau_sach, text="Mã đầu sách:").grid(row=0, column=0, sticky='e')
-entry_ma_dau_sach = tk.Entry(frame_dau_sach)
-entry_ma_dau_sach.grid(row=0, column=1)
+# Đặt kích thước cho các cột trong Treeview cho quản lý đầu sách
+for col in range(1, 9):
+    tree_dau_sach.column(col, width=100)
 
-tk.Label(frame_dau_sach, text="Tên đầu sách:").grid(row=1, column=0, sticky='e')
-entry_ten_dau_sach = tk.Entry(frame_dau_sach)
-entry_ten_dau_sach.grid(row=1, column=1)
+# Hàm thêm mới đầu sách
+def add_dau_sach():
+    ma_dau_sach = entries_dau_sach[0].get()
+    ten_dau_sach = entries_dau_sach[1].get()
+    nha_xuat_ban = entries_dau_sach[2].get()
+    so_trang = int(entries_dau_sach[3].get())
+    kich_thuoc = entries_dau_sach[4].get()
+    tac_gia = entries_dau_sach[5].get()
+    so_luong_sach = int(entries_dau_sach[6].get())
+    ma_chuyen_nganh = entries_dau_sach[7].get()
 
-tk.Label(frame_dau_sach, text="Nhà xuất bản:").grid(row=2, column=0, sticky='e')
-entry_nha_xuat_ban = tk.Entry(frame_dau_sach)
-entry_nha_xuat_ban.grid(row=2, column=1)
+    new_dau_sach = DauSach(
+        ma_dau_sach=ma_dau_sach, ten_dau_sach=ten_dau_sach,
+        nha_xuat_ban=nha_xuat_ban, so_trang=so_trang,
+        kich_thuoc=kich_thuoc, tac_gia=tac_gia,
+        so_luong_sach=so_luong_sach, ma_chuyen_nganh=ma_chuyen_nganh
+    )
 
-tk.Label(frame_dau_sach, text="Số trang:").grid(row=3, column=0, sticky='e')
-entry_so_trang = tk.Entry(frame_dau_sach)
-entry_so_trang.grid(row=3, column=1)
+    session.add(new_dau_sach)
+    session.commit()
+    messagebox.showinfo("Thông Báo", "Thêm đầu sách thành công!")
+    load_dau_sach()
 
-tk.Label(frame_dau_sach, text="Kích thước:").grid(row=4, column=0, sticky='e')
-entry_kich_thuoc = tk.Entry(frame_dau_sach)
-entry_kich_thuoc.grid(row=4, column=1)
+# Hàm tải dữ liệu đầu sách vào Treeview
+def load_dau_sach():
+    for i in tree_dau_sach.get_children():
+        tree_dau_sach.delete(i)
 
-tk.Label(frame_dau_sach, text="Tác giả:").grid(row=5, column=0, sticky='e')
-entry_tac_gia = tk.Entry(frame_dau_sach)
-entry_tac_gia.grid(row=5, column=1)
+    dau_sachs = session.query(DauSach).all()
+    for ds in dau_sachs:
+        tree_dau_sach.insert('', 'end', values=(
+            ds.ma_dau_sach, ds.ten_dau_sach, ds.nha_xuat_ban,
+            ds.so_trang, ds.kich_thuoc, ds.tac_gia,
+            ds.so_luong_sach, ds.ma_chuyen_nganh
+        ))
 
-tk.Label(frame_dau_sach, text="Số lượng sách:").grid(row=6, column=0, sticky='e')
-entry_so_luong_sach = tk.Entry(frame_dau_sach)
-entry_so_luong_sach.grid(row=6, column=1)
+# Nút thêm mới đầu sách
+btn_add_dau_sach = ttk.Button(frame_dau_sach, text="Thêm Đầu Sách", command=add_dau_sach)
+btn_add_dau_sach.grid(row=8, column=0, columnspan=2, pady=10)
+# Nút xóa đầu sách
+def delete_dau_sach():
+    selected_item = tree_dau_sach.selection()
+    if not selected_item:
+        messagebox.showwarning("Cảnh Báo", "Vui lòng chọn một đầu sách để xóa!")
+        return
+    ma_dau_sach = tree_dau_sach.item(selected_item, 'values')[0]
+    dau_sach = session.query(DauSach).filter_by(ma_dau_sach=ma_dau_sach).first()
+    if dau_sach:
+        phieu_muon_lien_quan = session.query(PhieuMuon).filter_by(ma_dau_sach=ma_dau_sach).all()
+        if phieu_muon_lien_quan:
+            for phieu_muon in phieu_muon_lien_quan:
+                # Xoá phiếu mượn liên quan
+                session.delete(phieu_muon)
+                load_phieu_muon()
+        session.delete(dau_sach)
+        session.commit()
+        messagebox.showinfo("Thông Báo", "Xóa đầu sách và các phiếu mượn có liên quan thành công!")
+        load_dau_sach()
+    else:
+        messagebox.showerror("Lỗi", "Đầu sách không tồn tại trong cơ sở dữ liệu!")
 
-tk.Label(frame_dau_sach, text="Mã chuyên ngành:").grid(row=7, column=0, sticky='e')
-entry_ma_chuyen_nganh_sach = tk.Entry(frame_dau_sach)
-entry_ma_chuyen_nganh_sach.grid(row=7, column=1)
+btn_delete_dau_sach = ttk.Button(frame_dau_sach, text="Xóa Đầu Sách", command=delete_dau_sach)
+btn_delete_dau_sach.grid(row=8, column=1, columnspan=2, pady=10)
 
-# Nút thêm, sửa, và xóa cho đầu sách
-tk.Button(frame_dau_sach, text="Thêm Đầu Sách", command=them_dau_sach).grid(row=8, column=0, columnspan=2)
-tk.Button(frame_dau_sach, text="Sửa Đầu Sách", command=sua_dau_sach).grid(row=9, column=0, columnspan=2)
-tk.Button(frame_dau_sach, text="Xóa Đầu Sách", command=xoa_dau_sach).grid(row=10, column=0, columnspan=2)
+# Nút sửa đầu sách
+def update_dau_sach():
+    selected_item = tree_dau_sach.selection()
+    if not selected_item:
+        messagebox.showwarning("Cảnh Báo", "Vui lòng chọn một đầu sách để sửa!")
+        return
+    ma_dau_sach = tree_dau_sach.item(selected_item, 'values')[0]
+    dau_sach = session.query(DauSach).filter_by(ma_dau_sach=ma_dau_sach).first()
+    if dau_sach:
+        ma_dau_sach = entries_dau_sach[0].get()
+        ten_dau_sach = entries_dau_sach[1].get()
+        nha_xuat_ban = entries_dau_sach[2].get()
+        so_trang = int(entries_dau_sach[3].get())
+        kich_thuoc = entries_dau_sach[4].get()
+        tac_gia = entries_dau_sach[5].get()
+        so_luong_sach = int(entries_dau_sach[6].get())
+        ma_chuyen_nganh = entries_dau_sach[7].get()
 
-# Data gridview để hiển thị dữ liệu đầu sách
-dausach_treeview = ttk.Treeview(frame, columns=("ma_dau_sach", "ten_dau_sach", "nha_xuat_ban", "so_trang", "kich_thuoc", "tac_gia", "so_luong_sach"), show="headings")
-dausach_treeview.heading("ma_dau_sach", text="Mã đầu sách")
-dausach_treeview.heading("ten_dau_sach", text="Tên đầu sách")
-dausach_treeview.heading("nha_xuat_ban", text="Nhà xuất bản")
-dausach_treeview.heading("so_trang", text="Số trang")
-dausach_treeview.heading("kich_thuoc", text="Kích thước")
-dausach_treeview.heading("tac_gia", text="Tác giả")
-dausach_treeview.heading("so_luong_sach", text="Số lượng sách")
-dausach_treeview.pack(padx=10, pady=10, fill=tk.BOTH, expand=True)
+        dau_sach.ma_dau_sach = ma_dau_sach
+        dau_sach.ten_dau_sach = ten_dau_sach
+        dau_sach.nha_xuat_ban = nha_xuat_ban
+        dau_sach.so_trang = so_trang
+        dau_sach.kich_thuoc = kich_thuoc
+        dau_sach.tac_gia = tac_gia
+        dau_sach.so_luong_sach = so_luong_sach
+        dau_sach.ma_chuyen_nganh = ma_chuyen_nganh
 
-# Hiển thị dữ liệu lên Treeview ban đầu
-hien_thi_dau_sach()
+        session.commit()
+        messagebox.showinfo("Thông Báo", "Cập nhật đầu sách thành công!")
+        load_dau_sach()
+    else:
+        messagebox.showerror("Lỗi", "Đầu sách không tồn tại trong cơ sở dữ liệu!")
 
-# Khung quản lý phiếu mượn sách
-frame_phieu_muon = tk.LabelFrame(frame, text="Quản lý phiếu mượn sách")
-frame_phieu_muon.pack(padx=10, pady=10, fill=tk.BOTH, expand=True)
-
-# Các ô nhập liệu phiếu mượn sách
-tk.Label(frame_phieu_muon, text="Mã phiếu mượn:").grid(row=0, column=0, sticky='e')
-entry_ma_phieu_muon = tk.Entry(frame_phieu_muon)
-entry_ma_phieu_muon.grid(row=0, column=1)
-
-tk.Label(frame_phieu_muon, text="Mã độc giả:").grid(row=1, column=0, sticky='e')
-entry_ma_doc_gia_pm = tk.Entry(frame_phieu_muon)
-entry_ma_doc_gia_pm.grid(row=1, column=1)
-
-tk.Label(frame_phieu_muon, text="Mã thủ thư:").grid(row=2, column=0, sticky='e')
-entry_ma_thu_thu_pm = tk.Entry(frame_phieu_muon)
-entry_ma_thu_thu_pm.grid(row=2, column=1)
-
-tk.Label(frame_phieu_muon, text="Mã đầu sách:").grid(row=3, column=0, sticky='e')
-entry_ma_dau_sach_pm = tk.Entry(frame_phieu_muon)
-entry_ma_dau_sach_pm.grid(row=3, column=1)
-
-tk.Label(frame_phieu_muon, text="Ngày mượn:").grid(row=4, column=0, sticky='e')
-entry_ngay_muon = tk.Entry(frame_phieu_muon)
-entry_ngay_muon.grid(row=4, column=1)
-
-tk.Label(frame_phieu_muon, text="Ngày trả:").grid(row=5, column=0, sticky='e')
-entry_ngay_tra = tk.Entry(frame_phieu_muon)
-entry_ngay_tra.grid(row=5, column=1)
-
-# Nút thêm, sửa, và xóa cho phiếu mượn sách
-tk.Button(frame_phieu_muon, text="Thêm Phiếu Mượn", command=them_phieu_muon).grid(row=6, column=0, columnspan=2)
-tk.Button(frame_phieu_muon, text="Sửa Phiếu Mượn", command=sua_phieu_muon).grid(row=7, column=0, columnspan=2)
-tk.Button(frame_phieu_muon, text="Xóa Phiếu Mượn", command=xoa_phieu_muon).grid(row=8, column=0, columnspan=2)
-
-# Data gridview để hiển thị dữ liệu phiếu mượn sách
-phieu_muon_treeview = ttk.Treeview(
-    frame,
-    columns=("ma_phieu_muon", "ma_doc_gia", "ma_thu_thu", "ma_dau_sach", "ngay_muon", "ngay_tra"),
-    show="headings"
-)
-phieu_muon_treeview.heading("ma_phieu_muon", text="Mã phiếu mượn")
-phieu_muon_treeview.heading("ma_doc_gia", text="Mã độc giả")
-phieu_muon_treeview.heading("ma_thu_thu", text="Mã thủ thư")
-phieu_muon_treeview.heading("ma_dau_sach", text="Mã đầu sách")
-phieu_muon_treeview.heading("ngay_muon", text="Ngày mượn")
-phieu_muon_treeview.heading("ngay_tra", text="Ngày trả")
-phieu_muon_treeview.pack(padx=10, pady=10, fill=tk.BOTH, expand=True)
-
-# Hiển thị dữ liệu lên Treeview phiếu mượn sách ban đầu
-hien_thi_phieu_muon()
+btn_update_dau_sach = ttk.Button(frame_dau_sach, text="Sửa Đầu Sách", command=update_dau_sach)
+btn_update_dau_sach.grid(row=8, column=3, columnspan=2, pady=10)
 
 
-# Chạy vòng lặp chính của ứng dụng
+load_dau_sach()
+
+# Widgets cho quản lý phiếu mượn
+labels_phieu_muon = [
+    "Mã Phiếu Mượn", "Mã Độc Giả", "Mã Thủ Thư", "Mã Đầu Sách",
+    "Ngày Mượn", "Ngày Trả"
+]
+entries_phieu_muon = []
+
+for i, label in enumerate(labels_phieu_muon):
+    lbl = ttk.Label(frame_phieu_muon, text=label)
+    lbl.grid(row=i, column=0, padx=5, pady=5, sticky='W')
+    entry = ttk.Entry(frame_phieu_muon)
+    entry.grid(row=i, column=1, padx=5, pady=5, sticky='W')
+    entries_phieu_muon.append(entry)
+
+# Treeview cho quản lý phiếu mượn
+tree_phieu_muon = ttk.Treeview(frame_phieu_muon, columns=(1, 2, 3, 4, 5, 6), show='headings', height=10)
+tree_phieu_muon.grid(row=0, column=2, rowspan=8, padx=5, pady=5)
+
+# Đặt tên cho các cột trong Treeview cho quản lý phiếu mượn
+tree_phieu_muon.heading(1, text='Mã Phiếu Mượn')
+tree_phieu_muon.heading(2, text='Mã Độc Giả')
+tree_phieu_muon.heading(3, text='Mã Thủ Thư')
+tree_phieu_muon.heading(4, text='Mã Đầu Sách')
+tree_phieu_muon.heading(5, text='Ngày Mượn')
+tree_phieu_muon.heading(6, text='Ngày Trả')
+
+# Đặt kích thước cho các cột trong Treeview cho quản lý phiếu mượn
+for col in range(1, 7):
+    tree_phieu_muon.column(col, width=100)
+
+# Hàm thêm mới phiếu mượn
+def add_phieu_muon():
+    ma_phieu_muon = entries_phieu_muon[0].get()
+    ma_doc_gia = entries_phieu_muon[1].get()
+    ma_thu_thu = entries_phieu_muon[2].get()
+    ma_dau_sach = entries_phieu_muon[3].get()
+    ngay_muon = entries_phieu_muon[4].get()
+    ngay_tra = entries_phieu_muon[5].get()
+
+    new_phieu_muon = PhieuMuon(
+        ma_phieu_muon=ma_phieu_muon, ma_doc_gia=ma_doc_gia,
+        ma_thu_thu=ma_thu_thu, ma_dau_sach=ma_dau_sach,
+        ngay_muon=ngay_muon, ngay_tra=ngay_tra
+    )
+
+    session.add(new_phieu_muon)
+    session.commit()
+    messagebox.showinfo("Thông Báo", "Thêm phiếu mượn thành công!")
+    load_phieu_muon()
+
+# Hàm tải dữ liệu phiếu mượn vào Treeview
+def load_phieu_muon():
+    for i in tree_phieu_muon.get_children():
+        tree_phieu_muon.delete(i)
+
+    phieu_muons = session.query(PhieuMuon).all()
+    for pm in phieu_muons:
+        tree_phieu_muon.insert('', 'end', values=(
+            pm.ma_phieu_muon, pm.ma_doc_gia, pm.ma_thu_thu,
+            pm.ma_dau_sach, pm.ngay_muon, pm.ngay_tra
+        ))
+
+# Nút thêm mới phiếu mượn
+btn_add_phieu_muon = ttk.Button(frame_phieu_muon, text="Thêm Phiếu Mượn", command=add_phieu_muon)
+btn_add_phieu_muon.grid(row=8, column=0, columnspan=2, pady=10)
+# Nút xóa phiếu mượn
+def delete_phieu_muon():
+    selected_item = tree_phieu_muon.selection()
+    if not selected_item:
+        messagebox.showwarning("Cảnh Báo", "Vui lòng chọn một phiếu mượn để xóa!")
+        return
+    ma_phieu_muon = tree_phieu_muon.item(selected_item, 'values')[0]
+    phieu_muon = session.query(PhieuMuon).filter_by(ma_phieu_muon=ma_phieu_muon).first()
+    if phieu_muon:
+        session.delete(phieu_muon)
+        session.commit()
+        messagebox.showinfo("Thông Báo", "Xóa phiếu mượn thành công!")
+        load_phieu_muon()
+    else:
+        messagebox.showerror("Lỗi", "Phiếu mượn không tồn tại trong cơ sở dữ liệu!")
+
+btn_delete_phieu_muon = ttk.Button(frame_phieu_muon, text="Xóa Phiếu Mượn", command=delete_phieu_muon)
+btn_delete_phieu_muon.grid(row=8, column=2, columnspan=2, pady=10)
+
+# Nút sửa phiếu mượn
+def update_phieu_muon():
+    selected_item = tree_phieu_muon.selection()
+    if not selected_item:
+        messagebox.showwarning("Cảnh Báo", "Vui lòng chọn một phiếu mượn để sửa!")
+        return
+    ma_phieu_muon = tree_phieu_muon.item(selected_item, 'values')[0]
+    phieu_muon = session.query(PhieuMuon).filter_by(ma_phieu_muon=ma_phieu_muon).first()
+    if phieu_muon:
+        ma_phieu_muon = entries_phieu_muon[0].get()
+        ma_doc_gia = entries_phieu_muon[1].get()
+        ma_thu_thu = entries_phieu_muon[2].get()
+        ma_dau_sach = entries_phieu_muon[3].get()
+        ngay_muon = entries_phieu_muon[4].get()
+        ngay_tra = entries_phieu_muon[5].get()
+
+        phieu_muon.ma_phieu_muon = ma_phieu_muon
+        phieu_muon.ma_doc_gia = ma_doc_gia
+        phieu_muon.ma_thu_thu = ma_thu_thu
+        phieu_muon.ma_dau_sach = ma_dau_sach
+        phieu_muon.ngay_muon = ngay_muon
+        phieu_muon.ngay_tra = ngay_tra
+
+        session.commit()
+        messagebox.showinfo("Thông Báo", "Cập nhật phiếu mượn thành công!")
+        load_phieu_muon()
+    else:
+        messagebox.showerror("Lỗi", "Phiếu mượn không tồn tại trong cơ sở dữ liệu!")
+
+btn_update_phieu_muon = ttk.Button(frame_phieu_muon, text="Sửa Phiếu Mượn", command=update_phieu_muon)
+btn_update_phieu_muon.grid(row=8, column=4, columnspan=2, pady=10)
+
+load_phieu_muon()
+
+def cleanup():
+    # Đảm bảo tệp cơ sở dữ liệu tồn tại trước khi xóa
+    if os.path.exists('finalTest.db'):
+        os.remove('finalTest.db')
+
+# Đăng ký hàm dọn dẹp với atexit
+atexit.register(cleanup)
+
+# Tiếp tục với việc khởi tạo engine và các hoạt động khác
+engine = create_engine('sqlite:///librarytest.db')
+
 root.mainloop()
 
+#<<<<<<< HEAD
 # Đóng phiên cơ sở dữ liệu
 session.close()
 
 #..QUy
+#=======
+
+#>>>>>>> aaf7b4853fe2e17d123e5154afd6af1b3ba421a8
+# Hoan Thanh code
